@@ -6,6 +6,8 @@ use App\Http\Controllers\ArchivoController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AdquisicionController;
 use App\Http\Controllers\FilePreviewController;
+use App\Http\Controllers\SeguridadController;
+
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
