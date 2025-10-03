@@ -41,5 +41,6 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('seguridad')->group(function () {    
         Route::post('permisoobjetosel', [SeguridadController::class, 'permisoobjetosel']);
         Route::post('perfilusuarioapp', [SeguridadController::class, 'perfilusuarioapp']);
+        Route::post('perfilusuarioobjetosel', [SeguridadController::class, 'perfilusuarioobjetosel']);
     });
 });
