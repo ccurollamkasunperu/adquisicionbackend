@@ -27,6 +27,8 @@ class SeguridadController extends Controller
                 $p_usu_id = $request->has('p_usu_id') ? (int) $request->input('p_usu_id') : 0;
                 $p_apl_id = $request->has('p_apl_id') ? (int) $request->input('p_apl_id') : 4;
                 
+                //echo "SELECT * FROM seguridad.spu_perfilusuarioobjeto_sel($p_usu_id,$p_apl_id)";
+                
                 $results = DB::select("SELECT * FROM seguridad.spu_perfilusuarioobjeto_sel(?,?)", [
                     $p_usu_id,$p_apl_id
                 ]);

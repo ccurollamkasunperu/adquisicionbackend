@@ -132,14 +132,9 @@ class AuthController extends Controller
 
             //echo "SELECT * FROM tickets.spu_usuario_age($p_usu_id, '$p_usu_apepat', '$p_usu_apemat', '$p_usu_nombre', '$p_usu_loging', $p_usu_chkadm, $p_usu_activo)";
 
-            $results = DB::select("SELECT * FROM tickets.spu_usuario_age(?,?,?,?,?,?,?)", [
-                $p_usu_id
-                , $p_usu_apepat
-                , $p_usu_apemat
-                , $p_usu_nombre
-                , $p_usu_loging
-                , $p_usu_chkadm
-                , $p_usu_activo]);
+            $results = DB::select("SELECT * FROM seguridad.spu_usuario_sel(?,?,?,?,?,?,?)", [
+                $p_usu_id, $p_usu_apepat, $p_usu_apemat, $p_usu_nombre, $p_usu_loging, $p_usu_chkadm, $p_usu_activo
+            ]);
             return response()->json($results);
         } catch (\Exception $e) {
             return response()->json([
