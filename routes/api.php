@@ -36,11 +36,15 @@ Route::middleware('auth:api')->group(function () {
         Route::post('entregadocumentossel', [AdquisicionController::class, 'entregadocumentossel']);
         Route::post('entregadocumentosanu', [AdquisicionController::class, 'entregadocumentosanu']);
         Route::post('entregadocumentoslis', [AdquisicionController::class, 'entregadocumentoslis']);
+        Route::post('entregadocumentosgra', [AdquisicionController::class, 'entregadocumentosgra']);
         Route::post('conformidadlis', [AdquisicionController::class, 'conformidadlis']);
         Route::post('conformidadgra', [AdquisicionController::class, 'conformidadgra']);
         Route::post('ordensel', [AdquisicionController::class, 'ordensel']);
         Route::post('ordenlis', [AdquisicionController::class, 'ordenlis']);
         Route::post('ordenimp', [AdquisicionController::class, 'ordenimp']);
+        Route::post('ordendocumentoreg', [AdquisicionController::class, 'ordendocumentoreg']);
+        Route::post('ordendocumentoanu', [AdquisicionController::class, 'ordendocumentoanu']);
+        Route::post('conformidademi', [AdquisicionController::class, 'conformidademi']);
         Route::post('especialistasel', [AdquisicionController::class, 'especialistasel']);
         Route::post('entregasel', [AdquisicionController::class, 'entregasel']);
         Route::post('entregalis', [AdquisicionController::class, 'entregalis']);

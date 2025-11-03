@@ -5,6 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 mb_internal_encoding("UTF-8");
 
 use App\Http\Controllers\Controller;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -247,6 +248,55 @@ class AdquisicionController extends Controller
             }
     }
     
+    public function conformidademi(Request $request): JsonResponse{
+        $validator = Validator::make($request->all(), [
+            'p_cnf_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la validación de datos',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $p_cnf_id = (int) $request->input('p_cnf_id', 0);
+
+            // 🔹 Consultamos el store
+            $results = DB::select("SELECT * FROM adquisicion.spu_conformidad_emi(?)", [$p_cnf_id]);
+            if (empty($results)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontraron datos para la conformidad.'
+                ], 404);
+            }
+
+            $data = (array)$results[0];
+
+            // 🔹 Renderizamos el HTML con Blade
+            $pdf = Pdf::loadView('reportes.conformidad', ['data' => $data])
+                    ->setPaper('A4', 'portrait');
+
+            // 🔹 Convertimos a Base64
+            $pdfBase64 = base64_encode($pdf->output());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'PDF generado correctamente.',
+                'file_name' => 'CONFORMIDAD_'.$data['cnf_id'].'.pdf',
+                'base64' => $pdfBase64
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el PDF',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
     public function conformidadlis(Request $request): JsonResponse{
             $validator = Validator::make($request->all(), [
                   'p_cnf_id' => 'required|integer',
@@ -270,6 +320,8 @@ class AdquisicionController extends Controller
                 if (is_array($p_cnf_permis)) {
                     $p_cnf_permis = json_encode($p_cnf_permis, JSON_UNESCAPED_UNICODE);
                 }
+
+                //echo "SELECT * FROM adquisicion.spu_conformidad_lis($p_cnf_id,$p_ent_id,$p_usu_id,'$p_cnf_permis')";
 
                 $results = DB::select("SELECT * FROM adquisicion.spu_conformidad_lis(?,?,?,?)", [
                       $p_cnf_id
@@ -321,6 +373,8 @@ class AdquisicionController extends Controller
             $p_cnf_observ = $request->input('p_cnf_observ', '');
             $p_cnf_usureg = (int) $request->input('p_cnf_usureg', 0);
 
+            //echo "SELECT * FROM adquisicion.spu_conformidad_gra($p_cnf_id,$p_ent_id,'$p_cnf_fecemi',$p_cnf_monpre,$p_cnf_cumpre,$p_cnf_cumplz,$p_cnf_conent,$p_cnf_cuprau,'$p_cnf_observ',$p_cnf_usureg)";
+
             $results = DB::select("SELECT * FROM adquisicion.spu_conformidad_gra(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                 $p_cnf_id,
                 $p_ent_id,
@@ -364,9 +418,14 @@ class AdquisicionController extends Controller
             $p_imp_nomfil = (string) $request->input('p_imp_nomfil', '');
             $p_imp_jsdata = (string) $request->input('p_imp_jsdata', '');
             $p_imp_usureg = (int) $request->input('p_imp_usureg', 0);
+
             $decoded = json_decode($p_imp_jsdata, true);
+
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $basePath = 'C:\\xampp\\htdocs\\adquisicion\\';
+
+                // 🔹 Ruta fija en unidad D: (tu entorno real)
+                $basePath = 'D:\\ADQUISICION\\';
+
                 foreach ($decoded as &$row) {
                     foreach ($row as $key => &$value) {
                         if (is_string($value)) {
@@ -385,18 +444,21 @@ class AdquisicionController extends Controller
                             $value = trim($value);
                         }
                     }
+
                     $tipo = isset($row['fk_id_orden_tipo']) ? (int) $row['fk_id_orden_tipo'] : 0;
                     if ($tipo !== 1 && $tipo !== 2) {
                         continue;
                     }
+
                     $anio = isset($row['in_orden_anno']) ? (int) $row['in_orden_anno'] : date('Y');
                     $numero = isset($row['vc_orden_numero']) ? (int) $row['vc_orden_numero'] : 0;
                     $tipoFolder = $tipo === 1 ? 'OC' : 'OS';
                     $num4 = str_pad($numero, 4, '0', STR_PAD_LEFT);
                     $subFolder = "{$tipoFolder}-{$num4}-{$anio}";
-                    $basePath = 'C:\\xampp\\htdocs\\adquisicion\\';
+
                     $tipoPath = $basePath . $tipoFolder;
-                    $finalPath = $tipoPath . "\\" . $subFolder;
+                    $finalPath = $tipoPath . DIRECTORY_SEPARATOR . $subFolder;
+
                     if (!File::exists($tipoPath)) {
                         File::makeDirectory($tipoPath, 0777, true);
                     }
@@ -405,16 +467,17 @@ class AdquisicionController extends Controller
                         File::makeDirectory($finalPath, 0777, true);
                     }
 
+                    // 🔸 Guardamos ruta completa en el JSON
                     $row['ruta_carpeta'] = $finalPath;
                 }
 
                 unset($row);
 
                 $p_imp_jsdata = json_encode($decoded, JSON_UNESCAPED_UNICODE);
-
             } else {
                 $p_imp_jsdata = mb_convert_encoding($p_imp_jsdata, 'UTF-8', 'auto');
             }
+
             DB::statement("SET client_encoding TO 'UTF8'");
             $results = DB::select("SELECT * FROM adquisicion.spu_orden_imp(?,?,?)", [
                 $p_imp_nomfil,
@@ -563,6 +626,116 @@ class AdquisicionController extends Controller
                     'error' => $e->getMessage()
                 ], 500);
             }
+    }
+
+    public function entregadocumentosgra(Request $request): JsonResponse{
+        $validator = Validator::make($request->all(), [
+            'p_ent_id' => 'required|integer',
+            'p_usu_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la validación de datos',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $p_ent_id = (int) $request->input('p_ent_id', 0);
+            $p_usu_id = (int) $request->input('p_usu_id', 0);
+            $fechaHoy = now()->format('Y-m-d');
+            $savedFiles = [];
+
+            if (!$request->hasFile('files') || count($request->file('files')) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se recibieron archivos para procesar.'
+                ], 400);
+            }
+
+            foreach ($request->file('files') as $file) {
+                if (!$file->isValid()) continue;
+                $originalName = $file->getClientOriginalName();
+                $nombreSinExt = pathinfo($originalName, PATHINFO_FILENAME);
+                $nombreLimpio = preg_replace('/[^A-Za-z0-9]/', '_', $nombreSinExt);
+                $extension = $file->getClientOriginalExtension();
+                $nuevoNombre = strtoupper($nombreLimpio . '.' . $extension);
+                $tamanoarchivo = (int) $file->getSize();
+                $results = DB::select("SELECT * FROM adquisicion.spu_entregadocumentos_gra(?,?,?,?,?,?,?,?,?)", [
+                    0,                  // p_edo_id
+                    $p_ent_id,          // p_ent_id
+                    0,                  // p_tdo_id
+                    $nombreSinExt,      // p_edo_numdoc
+                    $fechaHoy,          // p_edo_fecemi
+                    $nuevoNombre,       // p_edo_nomfil
+                    $tamanoarchivo,     // p_edo_tamfil
+                    '',                 // p_edo_observ
+                    $p_usu_id           // p_edo_usureg
+                ]);
+
+                if (empty($results) || !isset($results[0]->mensa)) {
+                    $savedFiles[] = [
+                        'file' => $nuevoNombre,
+                        'status' => 'error',
+                        'message' => 'El procedimiento no devolvió una ruta válida.'
+                    ];
+                    continue;
+                }
+
+                $rutaInfo = trim($results[0]->mensa);
+                $partes = explode('|', $rutaInfo);
+                $rutaBase = isset($partes[0]) ? trim($partes[0]) : '';
+                $archivoRemoto = isset($partes[1]) ? trim($partes[1]) : '';
+                $rutaBaseLocal = str_replace(
+                    ['10.250.55.118/adquisicion','http://10.250.55.118/adquisicion','https://10.250.55.118/adquisicion'],
+                    ['C:\\xampp\\htdocs\\adquisicion'],
+                    $rutaBase
+                );
+
+                $carpetaDestino = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rutaBaseLocal), DIRECTORY_SEPARATOR);
+                if (!File::exists($carpetaDestino)) {
+                    File::makeDirectory($carpetaDestino, 0777, true);
+                }
+                @chmod($carpetaDestino, 0777);
+
+                $rutaFinal = $carpetaDestino . DIRECTORY_SEPARATOR . $nuevoNombre;
+                $rutaFinal = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rutaFinal);
+                $realPath = $file->getRealPath();
+
+                $moved = false;
+                if (is_uploaded_file($realPath)) {
+                    $moved = @move_uploaded_file($realPath, $rutaFinal);
+                }
+                if (!$moved) {
+                    $moved = @File::copy($realPath, $rutaFinal);
+                }
+                if (!$moved) {
+                    throw new \Exception("No se pudo mover o copiar el archivo a {$rutaFinal}");
+                }
+
+                $savedFiles[] = [
+                    'file' => $nuevoNombre,
+                    'size_bytes' => $tamanoarchivo,
+                    'ruta' => $rutaFinal,
+                    'status' => 'ok',
+                    'mensa' => $results[0]->mensa
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Archivos procesados correctamente.',
+                'archivos' => $savedFiles
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar los documentos de entrega.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
     
     public function ordenlis(Request $request): JsonResponse{
@@ -873,6 +1046,138 @@ class AdquisicionController extends Controller
         }
     }
 
+    public function ordendocumentoreg(Request $request): JsonResponse{
+        $validator = Validator::make($request->all(), [
+            'p_ord_id' => 'required|integer',
+            'p_usu_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la validación de datos',
+                'errors'  => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $p_ord_id = (int) $request->input('p_ord_id', 0);
+            $p_usu_id = (int) $request->input('p_usu_id', 0);
+
+            if (!$request->hasFile('files')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se recibió ningún archivo.'
+                ], 400);
+            }
+
+            $file = $request->file('files');
+            if (!$file->isValid()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no válido.'
+                ], 400);
+            }
+
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $nombreBase = pathinfo($originalName, PATHINFO_FILENAME);
+            $nombreLimpio = preg_replace('/[^A-Za-z0-9]/', '_', $nombreBase);
+            $nuevoNombre = strtoupper($nombreLimpio . '.' . $extension);
+            $results = DB::select("SELECT * FROM adquisicion.spu_ordendocumento_reg(?, ?)", [
+                $p_ord_id,
+                $nuevoNombre
+            ]);
+
+            if (empty($results) || !isset($results[0]->error)) {
+                throw new \Exception("El procedimiento no devolvió una respuesta válida.");
+            }
+            $rutaInfo = trim($results[0]->mensa ?? '');
+            if (empty($rutaInfo)) {
+                throw new \Exception("El procedimiento no devolvió una ruta válida.");
+            }
+            $rutaInfo = str_replace('|', '', $rutaInfo);
+            $rutaInfo = trim($rutaInfo);
+            $rutaLocal = str_replace(
+                ['10.250.55.118/adquisicion', 'http://10.250.55.118/adquisicion', 'https://10.250.55.118/adquisicion'],
+                ['C:\\xampp\\htdocs\\adquisicion'],
+                $rutaInfo
+            );
+            $rutaLocal = str_replace(['/', '\\\\'], DIRECTORY_SEPARATOR, $rutaLocal);
+            $carpetaDestino = dirname($rutaLocal);
+            if (!File::exists($carpetaDestino)) {
+                File::makeDirectory($carpetaDestino, 0777, true, true);
+            }
+            @chmod($carpetaDestino, 0777);
+            $realPath = $file->getRealPath();
+            $rutaDestinoFinal = $carpetaDestino . DIRECTORY_SEPARATOR . $nuevoNombre;
+            $moved = false;
+            if (is_uploaded_file($realPath)) {
+                $moved = @move_uploaded_file($realPath, $rutaDestinoFinal);
+            }
+            if (!$moved) {
+                $moved = @File::copy($realPath, $rutaDestinoFinal);
+            }
+            if (!$moved) {
+                throw new \Exception("No se pudo mover o copiar el archivo a {$rutaDestinoFinal}");
+            }
+            $urlPublica = str_replace(
+                ['C:\\xampp\\htdocs\\adquisicion', 'C:/xampp/htdocs/adquisicion'],
+                ['http://10.250.55.118/adquisicion'],
+                $rutaDestinoFinal
+            );
+            $urlPublica = str_replace(DIRECTORY_SEPARATOR, '/', $urlPublica);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documento de orden registrado correctamente.',
+                'file'    => $nuevoNombre,
+                'ruta'    => $rutaDestinoFinal,
+                'url'     => $urlPublica,  // 🔹 URL HTTP lista para abrir en navegador
+                'dato'    => $results[0]
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al registrar el documento de la orden.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function ordendocumentoanu(Request $request): JsonResponse{
+        $validator = Validator::make($request->all(), [
+              'p_ord_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la validación de datos',
+                'errors'  => $validator->errors()
+            ], 400);
+        }
+
+        try
+        {
+            $p_ord_id = $request->has('p_ord_id') ? (int) $request->input('p_ord_id') : 0;
+
+            $results = DB::select('SELECT * FROM adquisicion.spu_ordendocumento_anu(?)', [
+                $p_ord_id
+            ]);
+
+            return response()->json($results);
+        }
+        catch (\Exception $e)
+        {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al obtener los datos',
+                    'error' => $e->getMessage()
+                ], 500);
+        }
+    }
+
     public function entregadocumentosanu(Request $request): JsonResponse{
         $validator = Validator::make($request->all(), [
               'p_edo_id' => 'required|integer',
@@ -1019,5 +1324,4 @@ class AdquisicionController extends Controller
             ], 500);
         }
     }
-
 }
