@@ -38,10 +38,13 @@ Route::middleware('auth:api')->group(function () {
         Route::post('entregadocumentoslis', [AdquisicionController::class, 'entregadocumentoslis']);
         Route::post('entregadocumentosgra', [AdquisicionController::class, 'entregadocumentosgra']);
         Route::post('conformidadlis', [AdquisicionController::class, 'conformidadlis']);
+        Route::post('especialistaard', [AdquisicionController::class, 'especialistaard']);
         Route::post('conformidadgra', [AdquisicionController::class, 'conformidadgra']);
         Route::post('ordensel', [AdquisicionController::class, 'ordensel']);
         Route::post('ordenlis', [AdquisicionController::class, 'ordenlis']);
         Route::post('ordenimp', [AdquisicionController::class, 'ordenimp']);
+        Route::post('conformidaddocumentogra', [AdquisicionController::class, 'conformidaddocumentogra']);
+        Route::post('conformidaddocumentoanu', [AdquisicionController::class, 'conformidaddocumentoanu']);
         Route::post('ordendocumentoreg', [AdquisicionController::class, 'ordendocumentoreg']);
         Route::post('ordendocumentoanu', [AdquisicionController::class, 'ordendocumentoanu']);
         Route::post('conformidademi', [AdquisicionController::class, 'conformidademi']);

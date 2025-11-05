@@ -535,6 +535,38 @@ class AdquisicionController extends Controller
             }
     }
 
+    public function especialistaard(Request $request): JsonResponse{
+            $validator = Validator::make($request->all(), [
+                'p_esp_id' => 'required|integer',
+                'p_ard_id' => 'required|integer'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error en la validación de datos',
+                    'errors' => $validator->errors()
+                ], 400);
+            }
+
+            try {
+                $p_esp_id = $request->has('p_esp_id') ? (int) $request->input('p_esp_id') : 0;
+                $p_ard_id = $request->has('p_ard_id') ? (int) $request->input('p_ard_id') : 0;
+
+                $results = DB::select("SELECT * FROM adquisicion.spu_especialista_ard(?,?)", [
+                    $p_esp_id,$p_ard_id
+                ]);
+
+                return response()->json($results);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al obtener los datos',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+    }
+
     public function ordensel(Request $request): JsonResponse{
             $validator = Validator::make($request->all(), [
                 'p_ord_id' => 'required|integer'
@@ -1043,6 +1075,98 @@ class AdquisicionController extends Controller
                     'message' => 'Error al obtener los datos',
                     'error' => $e->getMessage()
                 ], 500);
+        }
+    }
+
+    public function conformidaddocumentogra(Request $request): JsonResponse {
+        $validator = Validator::make($request->all(), [
+            'p_cnf_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la validación de datos',
+                'errors'  => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $p_cnf_id = (int) $request->input('p_cnf_id', 0);
+
+            if (!$request->hasFile('files')) {
+                return response()->json(['success' => false, 'message' => 'No se recibió ningún archivo.'], 400);
+            }
+
+            $file = $request->file('files');
+            if (!$file->isValid()) {
+                return response()->json(['success' => false, 'message' => 'Archivo no válido.'], 400);
+            }
+
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $nombreBase = pathinfo($originalName, PATHINFO_FILENAME);
+            $nombreLimpio = preg_replace('/[^A-Za-z0-9]/', '_', $nombreBase);
+            $nuevoNombre = strtoupper($nombreLimpio . '.' . $extension);
+
+            $results = DB::select("SELECT * FROM adquisicion.spu_conformidaddocumento_gra(?, ?)", [
+                $p_cnf_id,
+                $nuevoNombre
+            ]);
+
+            $rutaInfo = trim($results[0]->mensa ?? '');
+            $rutaLocal = str_replace(
+                ['10.250.55.118/adquisicion', 'http://10.250.55.118/adquisicion'],
+                ['C:\\xampp\\htdocs\\adquisicion'],
+                $rutaInfo
+            );
+            $rutaLocal = str_replace(['/', '\\\\'], DIRECTORY_SEPARATOR, $rutaLocal);
+            $carpetaDestino = dirname($rutaLocal);
+
+            if (!File::exists($carpetaDestino)) {
+                File::makeDirectory($carpetaDestino, 0777, true, true);
+            }
+
+            $file->move($carpetaDestino, $nuevoNombre);
+
+            $urlPublica = str_replace(
+                ['C:\\xampp\\htdocs\\adquisicion', 'C:/xampp/htdocs/adquisicion'],
+                ['http://10.250.55.118/adquisicion'],
+                $rutaLocal
+            );
+            $urlPublica = str_replace(DIRECTORY_SEPARATOR, '/', $urlPublica);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Documento de conformidad registrado correctamente.',
+                'ruta'    => $rutaLocal,
+                'url'     => $urlPublica,
+                'dato'    => $results[0]
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al registrar el documento.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function conformidaddocumentoanu(Request $request): JsonResponse {
+        $validator = Validator::make($request->all(), [
+            'p_cnf_id' => 'required|integer'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Error en los datos', 'errors' => $validator->errors()], 400);
+        }
+
+        try {
+            $p_cnf_id = (int)$request->input('p_cnf_id', 0);
+            $results = DB::select("SELECT * FROM adquisicion.spu_conformidaddocumento_anu(?)", [$p_cnf_id]);
+            return response()->json($results);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Error al anular documento', 'error' => $e->getMessage()], 500);
         }
     }
 

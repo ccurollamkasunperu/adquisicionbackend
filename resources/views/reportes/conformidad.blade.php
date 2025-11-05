@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <style>
 @page { margin: 40px 35px 50px 35px; }
-body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
+body { margin-top: 0px;font-family: Arial, sans-serif; font-size: 11px; color: #000; }
 
 table { width: 100%; border-collapse: collapse; }
 td, th { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; }
@@ -48,10 +48,10 @@ td {
 <!-- Encabezado con logos -->
 <!-- Encabezado -->
 <div style="position: relative; width: 100%; height: 80px; margin-bottom: 10px;">
-  <img src="{{ public_path('images/imagensuperior.png') }}" style="position: absolute; top: 0; left: 0; width: 30%; object-fit: cover;">
+  <img src="{{ public_path('images/imagensuperior.png') }}" style="position: absolute; top: 0; left: 0; width: 33%; object-fit: cover;">
   <div style="position: absolute; top: 0; left: 0; width: 100%; text-align: center; color: #000;">
-    <div style="font-size:10px; padding-top:25px;">Programa de Empleo Temporal “Llamkasun Perú”</div>
-    <div style="font-size:10px;">“Decenio de la Igualdad de Oportunidades para la Mujer y el Hombre”</div>
+    <!-- <div style="font-size:10px; padding-top:25px;">Programa de Empleo Temporal “Llamkasun Perú”</div> -->
+    <div style="font-size:10px;padding-top:35px;">“Decenio de la Igualdad de Oportunidades para la Mujer y el Hombre”</div>
     <div style="font-size:10px;margin-bottom: 8px;">“{{ $data['noa_descri'] ?? '' }}”</div>
     <h2 style="margin: 5px 0 0 0; font-size: 14px;">ANEXO Nº 12</h2>
   </div>
@@ -138,7 +138,9 @@ td {
         </tr>
         <tr>
           <td style="border:1px solid #000; text-align:center;">NO CUMPLE</td>
-          <td style="border:1px solid #000; text-align:center;"></td>
+          <td style="border:1px solid #000; text-align:center; width:30%; font-weight:bold;">
+            {{ $data['chk_cumpre'] == 0 ? 'X' : '' }}
+          </td>
         </tr>
       </table>
     </td>
@@ -167,7 +169,9 @@ td {
         </tr>
         <tr>
           <td style="border:1px solid #000; text-align:center;">NO CUMPLE</td>
-          <td style="border:1px solid #000;"></td>
+          <td style="border:1px solid #000; text-align:center; font-weight:bold;">
+            {{ $data['chk_cumplz'] == 0 ? 'X' : '' }}
+          </td>
         </tr>
       </table>
     </td>
@@ -180,11 +184,11 @@ td {
         <table style="width:40%; border-collapse: collapse; font-size:10px; margin:auto;" class="tablasino">
           <tr>
             <td class="padsino" style="border:1px solid #000; text-align:center;">SI</td>
-            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold; {{ $data['chk_conent'] == 1 ? 'background-color:#ffffff;' : '' }}">
+            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold;">
               {{ $data['chk_conent'] == 1 ? 'X' : '' }}
             </td>
             <td class="padsino" style="border:1px solid #000; text-align:center;">NO</td>
-            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold; {{ $data['chk_conent'] == 0 ? 'background-color:#ffffff;' : '' }}">
+            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold;">
               {{ $data['chk_conent'] == 0 ? 'X' : '' }}
             </td>
           </tr>
@@ -203,11 +207,11 @@ td {
         <table style="width:40%; border-collapse: collapse; font-size:10px; margin:auto;" class="tablasino">
           <tr>
             <td class="padsino" style="border:1px solid #000; text-align:center;">SI</td>
-            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold; {{ $data['chk_cuprau'] == 1 ? 'background-color:#ffffff;' : '' }}">
+            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold;">
               {{ $data['chk_cuprau'] == 1 ? 'X' : '' }}
             </td>
             <td class="padsino" style="border:1px solid #000; text-align:center;">NO</td>
-            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold; {{ $data['chk_cuprau'] == 0 ? 'background-color:#ffffff;' : '' }}">
+            <td class="padsino" style="border:1px solid #000; text-align:center; font-weight:bold;">
               {{ $data['chk_cuprau'] == 0 ? 'X' : '' }}
             </td>
           </tr>
@@ -243,10 +247,10 @@ td {
 <table style="margin-top:15px;">
   <tr>
     <td rowspan="2" width="4%" class="text-center bold">8</td>
-    <td class="text-center" style="padding:20px 0;"><br><br><br><br><br><br>
-      <b>MARIO ALFONSO MACHACA ROJAS</b><br>
-      Coordinador Funcional de Abastecimiento y Servicios Generales<br>
-      Programa de Empleo Temporal “Llamkasun Perú”
+    <td class="text-center" style="padding:20px 0;"><br><br><br><br><br>
+      <!-- <b>{{ $data['fun_nomcom'] ?? '' }}</b><br> -->
+      {{ $data['ard_descri'] ?? '' }}<br>
+      {{ $data['ent_razsoc'] ?? '' }}
     </td>
   </tr>
   <tr>
